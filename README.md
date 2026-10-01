@@ -85,19 +85,19 @@ Details live on the in-app **Method** page.
 
 ---
 
+## Live demo
+
+**https://nymm.vercel.app**
+
 ## Deploy (Vercel)
 
-This repo includes `vercel.json` for a Vite static build.
-
-1. Import the GitHub repo in [Vercel](https://vercel.com).
-2. Framework preset: **Vite** (or leave defaults from `vercel.json`).
-3. Deploy. Hash routes (`#/lab`, `#/stats`, …) work without server routing tricks.
-
-Or CLI:
+This repo includes `vercel.json` for a Vite static build. GitHub is connected for continuous production deploys on `main`.
 
 ```bash
-npx vercel
+npx vercel --prod
 ```
+
+Hash routes (`#/lab`, `#/stats`, …) work without server path rewrites beyond the included SPA fallback.
 
 ---
 

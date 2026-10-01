@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="NYMM mark">
+  <path d="M8 36 L16 14 L24 30 L32 10 L40 36" stroke="#141210" stroke-width="2.5" stroke-linejoin="miter"/>
+  <path d="M8 40 H40" stroke="#d41c1c" stroke-width="2"/>
+  <circle cx="32" cy="10" r="2.5" fill="#d41c1c"/>
+</svg>

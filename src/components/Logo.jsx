@@ -1,3 +1,7 @@
+/**
+ * Brand mark — links home to #/lab.
+ */
+
 export function Logo({ compact = false }) {
   if (compact) {
     return (

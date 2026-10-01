@@ -1,3 +1,7 @@
+/**
+ * Shell chrome: top navbar (route + tunnel arm) and site footer.
+ */
+
 import { Logo } from "./Logo";
 
 const LINKS = [
@@ -7,6 +11,7 @@ const LINKS = [
   { id: "about", label: "About", href: "#/about" },
 ];
 
+/** Sticky header with hash nav + Arm mixnet control. */
 export function Navbar({ route, tunnelLabel, tunnelClass, onArm, busy }) {
   return (
     <header className="navbar">

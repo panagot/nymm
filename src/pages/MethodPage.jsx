@@ -1,3 +1,8 @@
+/**
+ * Method page — threat model, transport matrix, metrics glossary, build limits.
+ * Documents how timings are produced so reviewers can trust the numbers.
+ */
+
 import { HopMap } from "../components/Charts";
 
 const THREAT = [

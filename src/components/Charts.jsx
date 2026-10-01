@@ -1,8 +1,18 @@
 /**
- * Blueprint / drafting-board charts — ink on paper, not neon scope.
+ * NYMM chart plates + session stats
+ * ---------------------------------
+ * Pure SVG “instrument” charts (no chart library).
+ * Ghost series (GHOST) fills empty plates so the UI never looks broken before the first run.
+ *
+ * Key exports:
+ *   LatencyScope   — dual-trace clearnet vs mixnet ms
+ *   DeltaStrip     — overhead bars (mix − clear)
+ *   computeRunStats — averages, P50/P90, by-label table inputs
+ *   exportSessionJson — downloadable evidence for writeups
  */
 
 function niceMax(raw) {
+  // Round axis max to a clean 1.5 / 3 / 5 / 10 × magnitude for readable ticks
   const n = Math.max(200, raw || 0);
   const mag = 10 ** Math.floor(Math.log10(n));
   const norm = n / mag;
@@ -26,6 +36,7 @@ function closedArea(pts, baselineY) {
 }
 
 const GHOST = [
+  // Placeholder traces shown before any live sample exists
   { id: "g0", label: "GET", clearMs: 180, mixMs: 920 },
   { id: "g1", label: "Tip", clearMs: 240, mixMs: 1140 },
   { id: "g2", label: "RPC", clearMs: 210, mixMs: 1310 },
@@ -33,6 +44,7 @@ const GHOST = [
   { id: "g4", label: "Tip", clearMs: 265, mixMs: 1220 },
 ];
 
+/** Dual-trace latency plate: clearnet (hazard) vs mixnet (ink). */
 export function LatencyScope({ runs, height = 260, ghost = true }) {
   const width = 720;
   const pad = { t: 32, r: 20, b: 40, l: 52 };
@@ -460,6 +472,10 @@ export function CumulativeStack({ runs }) {
   );
 }
 
+/**
+ * Aggregate a session of paired runs for Lab KPIs + Stats board.
+ * Ignores null timings so failed-only attempts do not skew averages to zero.
+ */
 export function computeRunStats(runs) {
   const empty = {
     count: 0,
@@ -625,10 +641,11 @@ export function CompositionBars({ runs }) {
   );
 }
 
+/** Browser download of the full session (meta + stats + raw runs) as JSON. */
 export function exportSessionJson(runs, meta = {}) {
   const payload = {
     tool: "NYMM",
-    version: "0.4",
+    version: "0.5",
     exportedAt: new Date().toISOString(),
     meta,
     stats: computeRunStats(runs),

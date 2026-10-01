@@ -1,3 +1,9 @@
+/**
+ * Lab page — primary interactive surface.
+ * Controls: Arm mixnet, Full battery, Tip / Wallet probes.
+ * Displays live KPIs, dual-trace plates, and per-probe response panes.
+ */
+
 import { useMemo } from "react";
 import {
   DeltaStrip,
@@ -7,6 +13,7 @@ import {
   computeRunStats,
 } from "../components/Charts";
 
+/** Response pane for one transport (clearnet or mixnet). */
 function Pane({ tone, title, data, pending }) {
   if (pending) {
     return (

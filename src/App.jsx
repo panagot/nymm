@@ -1,3 +1,15 @@
+/**
+ * NYMM root application
+ * ---------------------
+ * Owns session state shared across Lab / Stats / Method / About:
+ *   - mixnet tunnel status
+ *   - paired run log (clearnet ms vs mixnet ms)
+ *   - tip / wallet probe panes
+ *   - busy / phase banners for long WASM + Sphinx operations
+ *
+ * Probe design: same URL + body on both transports, then push one run row.
+ */
+
 import { useCallback, useMemo, useState } from "react";
 import { exportSessionJson } from "./components/Charts";
 import { Footer, Navbar } from "./components/Layout";
@@ -15,10 +27,12 @@ import LabPage from "./pages/LabPage";
 import MethodPage from "./pages/MethodPage";
 import StatsPage from "./pages/StatsPage";
 
+// Neutral echo host so the lab is self-contained (no real tip/RPC backend required)
 const TIP_ENDPOINT = "https://httpbin.org/post";
 const WALLET_ENDPOINT = "https://httpbin.org/post";
 const PING_ENDPOINT = "https://httpbin.org/get";
 
+/** Prefer timed successes; ignore zero-ms error placeholders for averages. */
 function msOf(data) {
   if (!data || typeof data.ms !== "number") return null;
   if (data.error && data.ms === 0) return null;
@@ -33,11 +47,13 @@ function okOf(data) {
 
 export default function App() {
   const [route] = useHashRoute();
+
+  // Tunnel badge + armed timestamp (module state lives in lib/mix.js)
   const [tunnel, setTunnel] = useState(getTunnelState());
   const [toast, setToast] = useState(null);
-  const [busy, setBusy] = useState("");
-  const [phase, setPhase] = useState("");
-  const [runs, setRuns] = useState([]);
+  const [busy, setBusy] = useState(""); // "" | connect | ping | tip | wallet | battery
+  const [phase, setPhase] = useState(""); // human-readable progress line
+  const [runs, setRuns] = useState([]); // session log (max 24)
   const [tipClear, setTipClear] = useState(null);
   const [tipMix, setTipMix] = useState(null);
   const [walletClear, setWalletClear] = useState(null);
@@ -49,6 +65,10 @@ export default function App() {
     window.setTimeout(() => setToast(null), 4500);
   }, []);
 
+  /**
+   * Append one paired sample to the session.
+   * Δ = mix − clear, ratio = mix / clear (when both timings exist).
+   */
   const pushRun = useCallback((label, clearData, mixData) => {
     const clearMs = msOf(clearData);
     const mixMs = msOf(mixData);
@@ -82,6 +102,10 @@ export default function App() {
     setTunnel(getTunnelState());
   }, []);
 
+  /**
+   * Ensure the mixnet tunnel is ready before mix samples.
+   * preserveBusy: when true, parent (battery) keeps owning the busy flag.
+   */
   const ensureTunnel = async ({ preserveBusy = false } = {}) => {
     if (getTunnelState().ready) return;
     if (!preserveBusy) setBusy("connect");
@@ -114,6 +138,10 @@ export default function App() {
     }
   };
 
+  /**
+   * Core paired probe: clearnet first, then mixnet, then log one run.
+   * Used by Tip and Wallet buttons (and by Full battery via preserveBusy).
+   */
   const runPair = async ({
     label,
     chartLabel,
@@ -168,6 +196,7 @@ export default function App() {
     }
   };
 
+  // Tip probe — hold-to-claim shaped JSON POST
   const runTip = (opts) =>
     runPair({
       label: "tip",
@@ -183,6 +212,7 @@ export default function App() {
       ...opts,
     });
 
+  // Wallet probe — getbalance-shaped JSON-RPC POST
   const runWallet = (opts) =>
     runPair({
       label: "wallet",
@@ -198,6 +228,7 @@ export default function App() {
       ...opts,
     });
 
+  // Lightweight GET latency sample (no tip/wallet body)
   const runPing = async ({ preserveBusy = false } = {}) => {
     if (!preserveBusy) setBusy("ping");
     setPhase("Sampling GET: clearnet…");
@@ -230,6 +261,10 @@ export default function App() {
     }
   };
 
+  /**
+   * One-click demo path for reviewers:
+   * arm tunnel if needed → GET → Tip → Wallet RPC.
+   */
   const runBattery = async () => {
     if (busy) return;
     setBusy("battery");
@@ -254,6 +289,7 @@ export default function App() {
     }
   };
 
+  /** Download session JSON for writeups / offline review. */
   const onExport = () => {
     if (!runs.length) {
       showToast("No runs to export", true);
@@ -312,12 +348,15 @@ export default function App() {
         busy={busy}
       />
       <main className="wrap main">
+        {/* Progress strip while WASM loads or probes are in flight */}
         {phase ? (
           <div className="phase-banner" role="status">
             <span className="phase-pulse" aria-hidden />
             {phase}
           </div>
         ) : null}
+
+        {/* Hash-routed pages share the same session state above */}
         {route === "lab" ? (
           <LabPage
             tunnel={tunnel}

@@ -1,3 +1,7 @@
+/**
+ * About page — product framing, how to use, scope / non-goals, disclaimer.
+ */
+
 const HOW_TO = [
   "Arm the mixnet tunnel from the navbar (WASM loads once per page)",
   "Run Full battery on Lab, or probe Tip / Wallet individually",

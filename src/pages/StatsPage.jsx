@@ -1,3 +1,7 @@
+/**
+ * Stats observatory — session KPIs, charts, by-label table, run log, JSON export.
+ */
+
 import {
   CompositionBars,
   CumulativeStack,

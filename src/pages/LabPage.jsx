@@ -248,8 +248,8 @@ export default function LabPage({
             <p className="fig">FIG. B</p>
             <h2>Signal plate</h2>
             <p>
-              Dual-trace latency and mixnet overhead. Specimen ink clears after the first
-              live run.
+              Dual-trace latency and mixnet overhead. Charts fill after the first paired
+              sample.
             </p>
           </div>
 
@@ -335,7 +335,8 @@ export default function LabPage({
           <h2>Probe schedule</h2>
           <p>
             Identical JSON. Clearnet then mixnet. Echo is httpbin; point endpoints at a real
-            tip host when integrating. Prefer <strong>Full battery</strong> for NSL demos.
+            tip host when integrating. Prefer <strong>Full battery</strong> for a complete
+            session.
           </p>
         </header>
 
@@ -448,8 +449,8 @@ export default function LabPage({
 
       <section className="lab-footnote">
         <p>
-          Reviewer path: Arm → Full battery → <a href="#/stats">Stats</a> → screenshot /
-          export JSON → cite <a href="#/method">Method</a> in the NSL thread.
+          Tip: Arm the tunnel once, run <strong>Full battery</strong>, then open{" "}
+          <a href="#/stats">Stats</a> for averages, percentiles, and export.
         </p>
       </section>
     </>

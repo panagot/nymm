@@ -31,8 +31,8 @@ export default function StatsPage({ runs, onClear, onExport, tunnelLabel, armedA
           <div>
             <h1>Stats board</h1>
             <p>
-              Session aggregates for NSL writeups. Clear = browser fetch. Mix = mix-fetch.
-              Export JSON for the forum post.
+              Session aggregates from this browser. Clear = browser fetch. Mix = mix-fetch.
+              Export JSON anytime to keep the run log.
             </p>
           </div>
           <div className="page-head-actions">
@@ -54,7 +54,7 @@ export default function StatsPage({ runs, onClear, onExport, tunnelLabel, armedA
           ? `${s.count} runs · tunnel ${tunnelLabel}${armedAt ? ` · armed ${new Date(armedAt).toLocaleTimeString()}` : ""} · avg Δ ${
               s.avgDelta != null ? `+${s.avgDelta} ms` : "—"
             } · avg ratio ${s.avgRatio != null ? `${s.avgRatio}×` : "—"} · success pairs ${s.successPairs}`
-          : "No live runs — specimen ink below. Arm mixnet on Lab, run Full battery, return here."}
+          : "No runs yet. Arm mixnet on Lab, run Full battery, then return here."}
       </p>
 
       <div className="stat-grid dense">
@@ -207,17 +207,17 @@ export default function StatsPage({ runs, onClear, onExport, tunnelLabel, armedA
           </p>
         </article>
         <article>
-          <h3>For NSL posts</h3>
+          <h3>Demo defaults</h3>
           <p>
-            Run Full battery twice, export JSON, screenshot dual-trace + by-label table.
-            Note cover/Poisson are off in this demo build.
+            Cover traffic and Poisson delay are off so the lab stays interactive. Re-enable
+            them in mix-fetch for production-shaped latency.
           </p>
         </article>
         <article>
           <h3>Variance</h3>
           <p>
-            Mix paths vary with gateway load. Prefer P50/P90 over a single sample when citing
-            numbers in the Build with Nym thread.
+            Mix paths vary with gateway load. Prefer P50/P90 over a single sample when comparing
+            clearnet and mixnet cost.
           </p>
         </article>
       </section>

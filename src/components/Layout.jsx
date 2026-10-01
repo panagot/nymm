@@ -95,15 +95,15 @@ export function Footer() {
         <div>
           <h4>Meta</h4>
           <ul>
-            <li>REV 0.4</li>
-            <li>UNIT / NSL-01</li>
+            <li>MIT License</li>
             <li>Independent prototype</li>
+            <li>@nymproject/mix-fetch</li>
           </ul>
         </div>
       </div>
       <div className="footer-bar">
         <span>Not affiliated with Nym Technologies SA</span>
-        <span>Open source lab · localhost first</span>
+        <span>Open source · clearnet vs mixnet</span>
       </div>
     </footer>
   );

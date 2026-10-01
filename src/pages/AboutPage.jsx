@@ -1,21 +1,20 @@
-const CHECKLIST = [
-  "Arm mixnet from the navbar (WASM loads once)",
-  "Run Full battery on Lab (GET + Tip + Wallet RPC)",
-  "Confirm dual-trace updates and mix panes return HTTP bodies",
-  "Open Stats: note avg Δ, ratio, P50/P90, by-label table",
-  "Export session JSON and attach or quote in the NSL post",
-  "Cite Method page: threat model + transport matrix + limits",
+const HOW_TO = [
+  "Arm the mixnet tunnel from the navbar (WASM loads once per page)",
+  "Run Full battery on Lab, or probe Tip / Wallet individually",
+  "Compare clearnet vs mixnet latency on the signal plates",
+  "Open Stats for averages, percentiles, charts, and the run log",
+  "Export session JSON if you want to keep or share the timing data",
 ];
 
 export default function AboutPage({ runCount = 0, tunnelLabel = "IDLE" }) {
   return (
     <div className="page-about">
       <header className="page-head">
-        <p className="fig">FIG. D · FIELD NOTES</p>
+        <p className="fig">FIG. D · ABOUT</p>
         <h1>About NYMM</h1>
         <p>
-          Independent Build with Nym lab. Same tip and wallet payloads on clearnet and
-          mixnet. Timed, plotted, exportable for the NSL thread.
+          A small lab that times the same tip- and wallet-shaped HTTP on clearnet and through
+          the Nym mixnet — then plots the difference.
         </p>
       </header>
 
@@ -29,8 +28,8 @@ export default function AboutPage({ runCount = 0, tunnelLabel = "IDLE" }) {
           <span>React · Vite · @nymproject/mix-fetch ^2.1</span>
         </div>
         <div>
-          <b>Mission</b>
-          <span>NSL · Build with Nym · tools</span>
+          <b>Transport</b>
+          <span>Browser fetch vs mix-fetch</span>
         </div>
         <div>
           <b>Session</b>
@@ -59,8 +58,8 @@ export default function AboutPage({ runCount = 0, tunnelLabel = "IDLE" }) {
         <article>
           <h2>03 · Evidence</h2>
           <p>
-            Real Sphinx hops via mix-fetch, not a mocked sleep. Cover and Poisson are off for
-            interactive demos; Method documents the tradeoff.
+            Real Sphinx hops via mix-fetch, not a mocked sleep. Cover and Poisson traffic are
+            off for interactive demos; Method documents the tradeoff.
           </p>
         </article>
         <article>
@@ -73,9 +72,9 @@ export default function AboutPage({ runCount = 0, tunnelLabel = "IDLE" }) {
       </div>
 
       <section className="about-steps">
-        <h2>NSL submission checklist</h2>
+        <h2>How to use</h2>
         <ol className="check-list">
-          {CHECKLIST.map((item) => (
+          {HOW_TO.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ol>
@@ -102,21 +101,21 @@ export default function AboutPage({ runCount = 0, tunnelLabel = "IDLE" }) {
 
       <section className="about-value">
         <header className="section-label">
-          <h2>Why this helps approval</h2>
-          <p>Concrete, runnable, documented</p>
+          <h2>What you get</h2>
+          <p>Runnable, measurable, documented</p>
         </header>
         <ul className="value-list">
           <li>
             <strong>Working mix-fetch integration</strong>
-            <span>Not a slide deck — arm, probe, see Sphinx-path latency.</span>
+            <span>Arm the tunnel, probe, and see Sphinx-path latency end to end.</span>
           </li>
           <li>
             <strong>Tip + wallet shapes</strong>
-            <span>Use cases Nym cares about: metadata privacy for sensitive HTTP.</span>
+            <span>Metadata-sensitive HTTP patterns that benefit from mixnet routing.</span>
           </li>
           <li>
             <strong>Measurable cost</strong>
-            <span>Δ, ratio, P50/P90, composition charts, exportable JSON.</span>
+            <span>Δ, ratio, P50/P90, composition charts, and exportable JSON.</span>
           </li>
           <li>
             <strong>Honest limits</strong>

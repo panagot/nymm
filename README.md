@@ -2,7 +2,7 @@
 
 **NYMM** (Nym Mixnet Metadata) is a small lab that times the same tip- and wallet-shaped HTTP requests on **clearnet** and through the **Nym mixnet**, then plots the difference.
 
-It is built for the Nym Squad League **Build with Nym** mission (`#tools-and-integrations`): a self-contained tool that uses real [`@nymproject/mix-fetch`](https://nym.com/docs/developers/mix-fetch/get-started), not a mocked delay.
+It uses real [`@nymproject/mix-fetch`](https://nym.com/docs/developers/mix-fetch/get-started) — not a mocked delay.
 
 > Independent community prototype. Not affiliated with Nym Technologies SA.
 
@@ -25,8 +25,8 @@ NYMM asks a concrete question:
 | **Lab** | Arm mixnet tunnel, run GET / Tip / Wallet probes, or **Full battery** |
 | **Stats** | Session KPIs (avg, P50/P90, Δ, ratio), by-label table, dual-trace / overhead / cumulative / composition / scatter charts, run log |
 | **Method** | Threat model, transport matrix, metrics glossary, build limits |
-| **About** | NSL-oriented checklist and scope notes |
-| **Export** | Download session JSON for writeups or review |
+| **About** | Problem, approach, scope, and how to use |
+| **Export** | Download session JSON for your own notes |
 
 Probes hit a neutral echo host ([httpbin.org](https://httpbin.org/)) so the lab stays self-contained. Swap endpoints later for a real tip or RPC host.
 

@@ -58,7 +58,7 @@ export function LatencyScope({ runs, height = 260, ghost = true }) {
 
   return (
     <div className={`plate${live ? "" : " ghost"}`}>
-      {!live ? <div className="plate-stamp">SPECIMEN · NOT LIVE</div> : null}
+      {!live ? <div className="plate-stamp">NO SAMPLES</div> : null}
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="chart-svg"
@@ -66,7 +66,7 @@ export function LatencyScope({ runs, height = 260, ghost = true }) {
         aria-label={
           live
             ? "Clearnet versus mixnet latency dual-trace"
-            : "Specimen latency dual-trace — run probes to replace"
+            : "Awaiting paired samples — run probes to fill this plate"
         }
       >
         <defs>
@@ -267,7 +267,7 @@ export function PairBars({ runs }) {
 
   return (
     <div className={`pair-bars${live ? "" : " ghost"}`}>
-      {!live ? <div className="plate-stamp">SPECIMEN</div> : null}
+      {!live ? <div className="plate-stamp">NO SAMPLES</div> : null}
       <ul>
         {data.map((r) => (
           <li key={r.id}>
@@ -314,7 +314,7 @@ export function ScatterPlot({ runs, height = 220 }) {
 
   return (
     <div className={`plate${live ? "" : " ghost"}`}>
-      {!live ? <div className="plate-stamp">SPECIMEN</div> : null}
+      {!live ? <div className="plate-stamp">NO SAMPLES</div> : null}
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="chart-svg"
@@ -406,7 +406,7 @@ export function CumulativeStack({ runs }) {
 
   return (
     <div className={`plate${live ? "" : " ghost"}`}>
-      {!live ? <div className="plate-stamp">SPECIMEN</div> : null}
+      {!live ? <div className="plate-stamp">NO SAMPLES</div> : null}
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="chart-svg"
@@ -592,7 +592,7 @@ export function CompositionBars({ runs }) {
 
   return (
     <div className={`pair-bars${live ? "" : " ghost"}`}>
-      {!live ? <div className="plate-stamp">SPECIMEN</div> : null}
+      {!live ? <div className="plate-stamp">NO SAMPLES</div> : null}
       <ul>
         {data.map((r) => {
           const clear = r.clearMs || 0;

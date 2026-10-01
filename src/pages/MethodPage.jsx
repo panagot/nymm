@@ -33,21 +33,6 @@ const LIMITS = [
   ["What NYMM does not do", "No custody, no real spends, no network consensus claims"],
 ];
 
-const NSL = [
-  {
-    title: "Mission fit",
-    body: "Build with Nym · tools & integrations. Demonstrates mix-fetch on tip/wallet-shaped HTTP with measurable privacy-path cost.",
-  },
-  {
-    title: "What reviewers can verify",
-    body: "Arm tunnel → Full battery → dual-trace + Stats board → Export JSON. Real WASM mix-fetch, not mocked delay.",
-  },
-  {
-    title: "Open questions answered",
-    body: "Does mixnet help tip bots? What does it cost in ms? NYMM answers with paired samples and documented limits.",
-  },
-];
-
 const METRICS = [
   ["clearMs", "Full-body browser fetch latency"],
   ["mixMs", "Full-body mix-fetch latency"],
@@ -70,8 +55,8 @@ export default function MethodPage({
         <p className="fig">FIG. M · METHOD</p>
         <h1>Method & threat model</h1>
         <p>
-          What is measured, why it matters for tip and wallet HTTP, and how to defend the
-          numbers in a Build with Nym review. Session runs logged:{" "}
+          What is measured, why it matters for tip and wallet HTTP, and how the numbers are
+          produced. Session runs logged:{" "}
           <strong>{String(runCount).padStart(2, "0")}</strong>.
         </p>
       </header>
@@ -97,21 +82,6 @@ export default function MethodPage({
             <span>{tunnelReady ? "Tunnel armed" : "Arm from navbar"}</span>
           </div>
         </aside>
-      </section>
-
-      <section className="spec-block">
-        <header className="section-label">
-          <h2>NSL reviewer map</h2>
-          <p>How this lab maps to Build with Nym</p>
-        </header>
-        <div className="threat-grid">
-          {NSL.map((t) => (
-            <article key={t.title}>
-              <h3>{t.title}</h3>
-              <p>{t.body}</p>
-            </article>
-          ))}
-        </div>
       </section>
 
       <section className="spec-block">
@@ -271,7 +241,7 @@ export default function MethodPage({
       <section className="method-cta">
         <div>
           <h2>Next</h2>
-          <p>Arm → Full battery → Stats → Export JSON for the submission thread.</p>
+          <p>Arm the tunnel on Lab, run Full battery, then open Stats to review the session.</p>
         </div>
         <div className="hero-actions">
           <a className="btn btn-fill" href="#/lab">
@@ -281,7 +251,7 @@ export default function MethodPage({
             Stats board
           </a>
           <a className="btn" href="#/about">
-            About / checklist
+            About
           </a>
         </div>
       </section>

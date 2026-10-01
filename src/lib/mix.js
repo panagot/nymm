@@ -132,7 +132,7 @@ export async function mixnetFetch(url, init) {
   }
 }
 
-/** Simulated tip API payload — mirrors Kindling/BeldexTip style metadata. */
+/** Tip API shaped probe payload — amount stays off any public feed. */
 export function buildTipProbePayload() {
   const tipId = `tip_${crypto.randomUUID().slice(0, 8)}`;
   return {

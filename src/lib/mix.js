@@ -6,57 +6,95 @@
 let mixFetchFn = null;
 let tunnelState = "idle"; // idle | connecting | ready | error
 let lastError = null;
+let connectPromise = null;
+
+const CONNECT_MS = 90_000;
+const FETCH_MS = 60_000;
 
 export function getTunnelState() {
   return { state: tunnelState, error: lastError, ready: Boolean(mixFetchFn) };
 }
 
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(
+      () => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)),
+      ms,
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+}
+
 export async function connectMixnet(opts = {}) {
   if (mixFetchFn) return mixFetchFn;
-  if (tunnelState === "connecting") {
-    throw new Error("Mixnet tunnel is already connecting");
-  }
+  if (connectPromise) return connectPromise;
 
   tunnelState = "connecting";
   lastError = null;
 
-  try {
-    const { createMixFetch } = await import("@nymproject/mix-fetch");
-    mixFetchFn = await createMixFetch({
-      // Demo-friendly: lower latency for interactive lab. Production tips can re-enable cover.
-      disableCoverTraffic: opts.disableCoverTraffic ?? true,
-      disablePoissonTraffic: opts.disablePoissonTraffic ?? true,
-      ...opts,
-    });
-    tunnelState = "ready";
-    return mixFetchFn;
-  } catch (err) {
-    tunnelState = "error";
-    lastError = err?.message || String(err);
-    mixFetchFn = null;
-    throw err;
-  }
+  connectPromise = (async () => {
+    try {
+      const { createMixFetch } = await withTimeout(
+        import("@nymproject/mix-fetch"),
+        CONNECT_MS,
+        "Loading mix-fetch WASM",
+      );
+      mixFetchFn = await withTimeout(
+        createMixFetch({
+          // Demo-friendly: lower latency for interactive lab. Production tips can re-enable cover.
+          disableCoverTraffic: opts.disableCoverTraffic ?? true,
+          disablePoissonTraffic: opts.disablePoissonTraffic ?? true,
+          ...opts,
+        }),
+        CONNECT_MS,
+        "Arming mixnet tunnel",
+      );
+      tunnelState = "ready";
+      return mixFetchFn;
+    } catch (err) {
+      tunnelState = "error";
+      lastError = err?.message || String(err);
+      mixFetchFn = null;
+      throw err;
+    } finally {
+      connectPromise = null;
+    }
+  })();
+
+  return connectPromise;
 }
 
 export async function clearnetFetch(url, init) {
   const started = performance.now();
-  const res = await fetch(url, init);
-  const ms = Math.round(performance.now() - started);
-  const text = await res.text();
-  let json = null;
   try {
-    json = JSON.parse(text);
-  } catch {
-    /* plain */
+    const res = await withTimeout(fetch(url, init), FETCH_MS, "Clearnet fetch");
+    const ms = Math.round(performance.now() - started);
+    const text = await res.text();
+    let json = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      /* plain */
+    }
+    return {
+      path: "clearnet",
+      ok: res.ok,
+      status: res.status,
+      ms,
+      headers: Object.fromEntries(res.headers.entries()),
+      body: json ?? text.slice(0, 2000),
+    };
+  } catch (err) {
+    return {
+      path: "clearnet",
+      ok: false,
+      status: null,
+      ms: Math.round(performance.now() - started),
+      error: err?.message || String(err),
+      body: null,
+    };
   }
-  return {
-    path: "clearnet",
-    ok: res.ok,
-    status: res.status,
-    ms,
-    headers: Object.fromEntries(res.headers.entries()),
-    body: json ?? text.slice(0, 2000),
-  };
 }
 
 export async function mixnetFetch(url, init) {
@@ -64,23 +102,34 @@ export async function mixnetFetch(url, init) {
     throw new Error("Mixnet tunnel not connected — call connectMixnet() first");
   }
   const started = performance.now();
-  const res = await mixFetchFn(url, init);
-  const ms = Math.round(performance.now() - started);
-  const text = await res.text();
-  let json = null;
   try {
-    json = JSON.parse(text);
-  } catch {
-    /* plain */
+    const res = await withTimeout(mixFetchFn(url, init), FETCH_MS, "Mixnet fetch");
+    const ms = Math.round(performance.now() - started);
+    const text = await res.text();
+    let json = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      /* plain */
+    }
+    return {
+      path: "mixnet",
+      ok: res.ok,
+      status: res.status,
+      ms,
+      headers: Object.fromEntries(res.headers.entries()),
+      body: json ?? text.slice(0, 2000),
+    };
+  } catch (err) {
+    return {
+      path: "mixnet",
+      ok: false,
+      status: null,
+      ms: Math.round(performance.now() - started),
+      error: err?.message || String(err),
+      body: null,
+    };
   }
-  return {
-    path: "mixnet",
-    ok: res.ok,
-    status: res.status,
-    ms,
-    headers: Object.fromEntries(res.headers.entries()),
-    body: json ?? text.slice(0, 2000),
-  };
 }
 
 /** Simulated tip API payload — mirrors Kindling/BeldexTip style metadata. */

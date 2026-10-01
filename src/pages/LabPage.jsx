@@ -73,6 +73,7 @@ export default function LabPage({
   tunnelLabel,
   tunnelClass,
   busy,
+  phase,
   runs,
   avgClear,
   avgMix,
@@ -90,6 +91,19 @@ export default function LabPage({
   onExport,
 }) {
   const stats = useMemo(() => computeRunStats(runs), [runs]);
+  const isBusy = Boolean(busy);
+  const batteryLabel =
+    busy === "connect"
+      ? "Arming…"
+      : busy === "battery"
+        ? "Running battery…"
+        : busy === "ping"
+          ? "Pinging…"
+          : busy === "tip" || busy === "wallet"
+            ? "Probing…"
+            : tunnel.state === "ready"
+              ? "Run full battery"
+              : "Arm & run battery";
 
   return (
     <>
@@ -109,7 +123,7 @@ export default function LabPage({
               type="button"
               className="btn btn-fill"
               onClick={onConnect}
-              disabled={busy === "connect" || tunnel.state === "ready"}
+              disabled={isBusy || tunnel.state === "ready"}
             >
               {tunnel.state === "ready"
                 ? "Tunnel live"
@@ -121,9 +135,9 @@ export default function LabPage({
               type="button"
               className="btn"
               onClick={runBattery}
-              disabled={Boolean(busy) || tunnel.state !== "ready"}
+              disabled={isBusy}
             >
-              {busy ? "Running…" : "Run full battery"}
+              {batteryLabel}
             </button>
             <a className="btn" href="#/stats">
               Stats
@@ -132,6 +146,12 @@ export default function LabPage({
               Method
             </a>
           </div>
+          {!runs.length && !isBusy ? (
+            <p className="hero-hint">
+              Stats stay empty until a probe finishes. Use <strong>Arm &amp; run battery</strong>{" "}
+              — first arm downloads ~5&nbsp;MB WASM (can take 10–30s).
+            </p>
+          ) : null}
         </div>
 
         <aside className="hero-sheet">
@@ -214,6 +234,13 @@ export default function LabPage({
           </a>
         </div>
       </section>
+      {!runs.length ? (
+        <p className="stats-empty-note">
+          {isBusy || phase
+            ? phase || "Working…"
+            : "No samples yet — dashes mean empty session, not a broken meter. Arm & run battery to fill these."}
+        </p>
+      ) : null}
 
       <section className="plate-desk" id="plate">
         <div className="rail">
@@ -261,20 +288,19 @@ export default function LabPage({
               type="button"
               className="btn btn-fill"
               onClick={onConnect}
-              disabled={busy === "connect" || tunnel.state === "ready"}
+              disabled={isBusy || tunnel.state === "ready"}
             >
-              {tunnel.state === "ready" ? "Tunnel armed" : "Arm mixnet tunnel"}
+              {tunnel.state === "ready"
+                ? "Tunnel armed"
+                : busy === "connect"
+                  ? "Arming…"
+                  : "Arm mixnet tunnel"}
             </button>
-            <button type="button" className="btn" onClick={runPing} disabled={Boolean(busy)}>
+            <button type="button" className="btn" onClick={runPing} disabled={isBusy}>
               {busy === "ping" ? "Pinging…" : "Latency sample"}
             </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={runBattery}
-              disabled={Boolean(busy) || tunnel.state !== "ready"}
-            >
-              Full battery
+            <button type="button" className="btn" onClick={runBattery} disabled={isBusy}>
+              {busy === "battery" ? "Battery…" : "Full battery"}
             </button>
           </div>
         </div>
@@ -331,7 +357,7 @@ export default function LabPage({
                 type="button"
                 className="btn btn-fill"
                 onClick={runTip}
-                disabled={Boolean(busy)}
+                disabled={isBusy}
               >
                 {busy === "tip" ? "Probing…" : "Run tip probe"}
               </button>
@@ -383,7 +409,7 @@ export default function LabPage({
                 type="button"
                 className="btn btn-fill"
                 onClick={runWallet}
-                disabled={Boolean(busy)}
+                disabled={isBusy}
               >
                 {busy === "wallet" ? "Probing…" : "Run wallet probe"}
               </button>

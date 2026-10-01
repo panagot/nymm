@@ -20,7 +20,8 @@ const WALLET_ENDPOINT = "https://httpbin.org/post";
 const PING_ENDPOINT = "https://httpbin.org/get";
 
 function msOf(data) {
-  if (!data || data.error || typeof data.ms !== "number") return null;
+  if (!data || typeof data.ms !== "number") return null;
+  if (data.error && data.ms === 0) return null;
   return data.ms;
 }
 
@@ -35,6 +36,7 @@ export default function App() {
   const [tunnel, setTunnel] = useState(getTunnelState());
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState("");
+  const [phase, setPhase] = useState("");
   const [runs, setRuns] = useState([]);
   const [tipClear, setTipClear] = useState(null);
   const [tipMix, setTipMix] = useState(null);
@@ -44,23 +46,26 @@ export default function App() {
 
   const showToast = useCallback((message, isError = false) => {
     setToast({ message, isError });
-    window.setTimeout(() => setToast(null), 4000);
+    window.setTimeout(() => setToast(null), 4500);
   }, []);
 
   const pushRun = useCallback((label, clearData, mixData) => {
     const clearMs = msOf(clearData);
     const mixMs = msOf(mixData);
-    if (clearMs == null && mixMs == null) return;
     setRuns((prev) =>
       [
         ...prev,
         {
           id: `${Date.now()}_${label}`,
           label,
-          clearMs: clearMs ?? 0,
-          mixMs: mixMs ?? 0,
-          delta: Math.max(0, (mixMs ?? 0) - (clearMs ?? 0)),
-          ratio: clearMs ? Number(((mixMs ?? 0) / clearMs).toFixed(2)) : null,
+          clearMs,
+          mixMs,
+          delta:
+            clearMs != null && mixMs != null ? Math.max(0, mixMs - clearMs) : null,
+          ratio:
+            clearMs && mixMs != null
+              ? Number((mixMs / clearMs).toFixed(2))
+              : null,
           clearOk: okOf(clearData),
           mixOk: okOf(mixData),
           clearStatus: clearData?.status ?? null,
@@ -73,23 +78,53 @@ export default function App() {
     );
   }, []);
 
-  const onConnect = async () => {
-    setBusy("connect");
+  const syncTunnel = useCallback(() => {
+    setTunnel(getTunnelState());
+  }, []);
+
+  const ensureTunnel = async ({ preserveBusy = false } = {}) => {
+    if (getTunnelState().ready) return;
+    if (!preserveBusy) setBusy("connect");
+    setTunnel({ state: "connecting", error: null, ready: false });
+    setPhase("Loading mix-fetch WASM (~5 MB), then arming the Sphinx tunnel…");
+    showToast("Arming mixnet — first load can take ~10–30s");
     try {
       await connectMixnet();
-      setTunnel(getTunnelState());
       setArmedAt(new Date().toISOString());
+      syncTunnel();
       showToast("Tunnel armed");
     } catch (err) {
-      setTunnel(getTunnelState());
+      syncTunnel();
       showToast(err?.message || String(err), true);
+      throw err;
     } finally {
-      setBusy("");
+      if (!preserveBusy) {
+        setBusy("");
+        setPhase("");
+      }
     }
   };
 
-  const runPair = async ({ label, chartLabel, clearSetter, mixSetter, url, init }) => {
-    setBusy(label);
+  const onConnect = async () => {
+    if (busy) return;
+    try {
+      await ensureTunnel();
+    } catch {
+      /* toast already shown */
+    }
+  };
+
+  const runPair = async ({
+    label,
+    chartLabel,
+    clearSetter,
+    mixSetter,
+    url,
+    init,
+    preserveBusy = false,
+  }) => {
+    if (!preserveBusy) setBusy(label);
+    setPhase(`Sampling ${chartLabel}: clearnet…`);
     clearSetter(null);
     mixSetter(null);
     let clearData = null;
@@ -98,27 +133,42 @@ export default function App() {
     try {
       clearData = await clearnetFetch(url, init);
       clearSetter(clearData);
+      if (clearData.error) showToast(`Clearnet: ${clearData.error}`, true);
     } catch (err) {
-      clearData = { error: err?.message || String(err) };
+      clearData = { error: err?.message || String(err), ms: null, ok: false };
       clearSetter(clearData);
+      showToast(clearData.error, true);
     }
 
     try {
       if (!getTunnelState().ready) {
-        throw new Error("Arm the mixnet tunnel first");
+        mixData = {
+          error: "Arm the mixnet tunnel first",
+          ms: null,
+          ok: false,
+        };
+        mixSetter(mixData);
+        showToast(mixData.error, true);
+      } else {
+        setPhase(`Sampling ${chartLabel}: mixnet…`);
+        mixData = await mixnetFetch(url, init);
+        mixSetter(mixData);
+        if (mixData.error) showToast(`Mixnet: ${mixData.error}`, true);
       }
-      mixData = await mixnetFetch(url, init);
-      mixSetter(mixData);
     } catch (err) {
-      mixData = { error: err?.message || String(err) };
+      mixData = { error: err?.message || String(err), ms: null, ok: false };
       mixSetter(mixData);
+      showToast(mixData.error, true);
     } finally {
       pushRun(chartLabel, clearData, mixData);
-      setBusy("");
+      if (!preserveBusy) {
+        setBusy("");
+        setPhase("");
+      }
     }
   };
 
-  const runTip = () =>
+  const runTip = (opts) =>
     runPair({
       label: "tip",
       chartLabel: "Tip",
@@ -130,9 +180,10 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildTipProbePayload()),
       },
+      ...opts,
     });
 
-  const runWallet = () =>
+  const runWallet = (opts) =>
     runPair({
       label: "wallet",
       chartLabel: "RPC",
@@ -144,38 +195,63 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildWalletRpcPayload()),
       },
+      ...opts,
     });
 
-  const runPing = async () => {
-    setBusy("ping");
+  const runPing = async ({ preserveBusy = false } = {}) => {
+    if (!preserveBusy) setBusy("ping");
+    setPhase("Sampling GET: clearnet…");
     let clearData = null;
     let mixData = null;
     try {
       clearData = await clearnetFetch(PING_ENDPOINT, { method: "GET" });
+      if (clearData.error) showToast(`Clearnet: ${clearData.error}`, true);
     } catch (err) {
-      clearData = { error: err?.message || String(err) };
+      clearData = { error: err?.message || String(err), ms: null, ok: false };
+      showToast(clearData.error, true);
     }
     try {
-      if (!getTunnelState().ready) throw new Error("Arm the mixnet tunnel first");
-      mixData = await mixnetFetch(PING_ENDPOINT, { method: "GET" });
+      if (!getTunnelState().ready) {
+        mixData = { error: "Arm the mixnet tunnel first", ms: null, ok: false };
+        showToast(mixData.error, true);
+      } else {
+        setPhase("Sampling GET: mixnet…");
+        mixData = await mixnetFetch(PING_ENDPOINT, { method: "GET" });
+        if (mixData.error) showToast(`Mixnet: ${mixData.error}`, true);
+      }
     } catch (err) {
-      mixData = { error: err?.message || String(err) };
+      mixData = { error: err?.message || String(err), ms: null, ok: false };
+      showToast(mixData.error, true);
     }
     pushRun("GET", clearData, mixData);
-    setBusy("");
-    if (mixData?.error) showToast(mixData.error, true);
+    if (!preserveBusy) {
+      setBusy("");
+      setPhase("");
+    }
   };
 
   const runBattery = async () => {
     if (busy) return;
-    if (!getTunnelState().ready) {
-      showToast("Arm the mixnet tunnel first", true);
-      return;
+    setBusy("battery");
+    setPhase("Full battery — arming if needed, then GET → Tip → RPC");
+    try {
+      await ensureTunnel({ preserveBusy: true });
+      setBusy("battery");
+      setPhase("Full battery: GET sample…");
+      await runPing({ preserveBusy: true });
+      setBusy("battery");
+      setPhase("Full battery: Tip probe…");
+      await runTip({ preserveBusy: true });
+      setBusy("battery");
+      setPhase("Full battery: Wallet RPC…");
+      await runWallet({ preserveBusy: true });
+      showToast("Battery complete · GET + Tip + RPC");
+    } catch {
+      /* ensureTunnel toast already shown */
+    } finally {
+      setBusy("");
+      setPhase("");
     }
-    await runPing();
-    await runTip();
-    await runWallet();
-    showToast("Battery complete · GET + Tip + RPC");
   };
 
   const onExport = () => {
@@ -194,15 +270,13 @@ export default function App() {
   };
 
   const avgClear = useMemo(() => {
-    if (!runs.length) return null;
-    const vals = runs.map((r) => r.clearMs).filter(Boolean);
+    const vals = runs.map((r) => r.clearMs).filter((v) => typeof v === "number");
     if (!vals.length) return null;
     return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
   }, [runs]);
 
   const avgMix = useMemo(() => {
-    if (!runs.length) return null;
-    const vals = runs.map((r) => r.mixMs).filter(Boolean);
+    const vals = runs.map((r) => r.mixMs).filter((v) => typeof v === "number");
     if (!vals.length) return null;
     return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
   }, [runs]);
@@ -212,14 +286,20 @@ export default function App() {
   const tunnelLabel =
     tunnel.state === "ready"
       ? "LIVE"
-      : tunnel.state === "connecting"
+      : tunnel.state === "connecting" || busy === "connect"
         ? "ARMING"
         : tunnel.state === "error"
           ? "FAULT"
           : "IDLE";
 
   const tunnelClass =
-    tunnel.state === "ready" ? "ok" : tunnel.state === "error" ? "bad" : "warn";
+    tunnel.state === "ready"
+      ? "ok"
+      : tunnel.state === "error"
+        ? "bad"
+        : busy === "connect" || tunnel.state === "connecting"
+          ? "warn"
+          : "warn";
 
   return (
     <>
@@ -232,12 +312,19 @@ export default function App() {
         busy={busy}
       />
       <main className="wrap main">
+        {phase ? (
+          <div className="phase-banner" role="status">
+            <span className="phase-pulse" aria-hidden />
+            {phase}
+          </div>
+        ) : null}
         {route === "lab" ? (
           <LabPage
             tunnel={tunnel}
             tunnelLabel={tunnelLabel}
             tunnelClass={tunnelClass}
             busy={busy}
+            phase={phase}
             runs={runs}
             avgClear={avgClear}
             avgMix={avgMix}

@@ -492,14 +492,25 @@ export function computeRunStats(runs) {
 
   if (!runs.length) return empty;
 
-  const clears = runs.map((r) => r.clearMs || 0).sort((a, b) => a - b);
-  const mixes = runs.map((r) => r.mixMs || 0).sort((a, b) => a - b);
+  const clears = runs
+    .map((r) => r.clearMs)
+    .filter((v) => typeof v === "number")
+    .sort((a, b) => a - b);
+  const mixes = runs
+    .map((r) => r.mixMs)
+    .filter((v) => typeof v === "number")
+    .sort((a, b) => a - b);
   const deltas = runs
-    .map((r) => Math.max(0, (r.mixMs || 0) - (r.clearMs || 0)))
+    .map((r) =>
+      typeof r.clearMs === "number" && typeof r.mixMs === "number"
+        ? Math.max(0, r.mixMs - r.clearMs)
+        : null,
+    )
+    .filter((v) => typeof v === "number")
     .sort((a, b) => a - b);
   const ratios = runs
-    .filter((r) => r.clearMs > 0 && r.mixMs > 0)
-    .map((r) => (r.mixMs || 0) / r.clearMs)
+    .filter((r) => r.clearMs > 0 && typeof r.mixMs === "number")
+    .map((r) => r.mixMs / r.clearMs)
     .sort((a, b) => a - b);
 
   const avg = (arr) =>
@@ -521,9 +532,11 @@ export function computeRunStats(runs) {
     const key = r.label || "Other";
     if (!byLabel[key]) byLabel[key] = { count: 0, clear: [], mix: [], delta: [] };
     byLabel[key].count += 1;
-    byLabel[key].clear.push(r.clearMs || 0);
-    byLabel[key].mix.push(r.mixMs || 0);
-    byLabel[key].delta.push(Math.max(0, (r.mixMs || 0) - (r.clearMs || 0)));
+    if (typeof r.clearMs === "number") byLabel[key].clear.push(r.clearMs);
+    if (typeof r.mixMs === "number") byLabel[key].mix.push(r.mixMs);
+    if (typeof r.clearMs === "number" && typeof r.mixMs === "number") {
+      byLabel[key].delta.push(Math.max(0, r.mixMs - r.clearMs));
+    }
   }
   for (const key of Object.keys(byLabel)) {
     const g = byLabel[key];
@@ -533,10 +546,10 @@ export function computeRunStats(runs) {
       avgMix: avg(g.mix),
       avgDelta: avg(g.delta),
       avgRatio:
-        g.clear.some((c) => c > 0)
+        g.clear.length && g.mix.length
           ? (
               g.mix.reduce((a, b, i) => a + (g.clear[i] ? b / g.clear[i] : 0), 0) /
-              g.clear.filter((c) => c > 0).length
+              Math.min(g.clear.length, g.mix.length)
             ).toFixed(1)
           : null,
     };
@@ -546,13 +559,13 @@ export function computeRunStats(runs) {
     count: runs.length,
     avgClear: avg(clears),
     avgMix: avg(mixes),
-    minClear: clears[0],
-    maxClear: clears[clears.length - 1],
-    minMix: mixes[0],
-    maxMix: mixes[mixes.length - 1],
+    minClear: clears[0] ?? null,
+    maxClear: clears.length ? clears[clears.length - 1] : null,
+    minMix: mixes[0] ?? null,
+    maxMix: mixes.length ? mixes[mixes.length - 1] : null,
     avgDelta: avg(deltas),
-    minDelta: deltas[0],
-    maxDelta: deltas[deltas.length - 1],
+    minDelta: deltas[0] ?? null,
+    maxDelta: deltas.length ? deltas[deltas.length - 1] : null,
     avgRatio: avgF(ratios),
     minRatio: ratios.length ? ratios[0].toFixed(1) : null,
     maxRatio: ratios.length ? ratios[ratios.length - 1].toFixed(1) : null,
@@ -566,9 +579,9 @@ export function computeRunStats(runs) {
     sumMix: sum(mixes),
     sumDelta: sum(deltas),
     byLabel,
-    successPairs: runs.filter((r) => r.clearOk !== false && r.mixOk !== false).length,
-    mixErrors: runs.filter((r) => r.mixOk === false).length,
-    clearErrors: runs.filter((r) => r.clearOk === false).length,
+    successPairs: runs.filter((r) => r.clearOk && r.mixOk).length,
+    mixErrors: runs.filter((r) => r.mixOk === false || r.mixError).length,
+    clearErrors: runs.filter((r) => r.clearOk === false || r.clearError).length,
   };
 }
 
